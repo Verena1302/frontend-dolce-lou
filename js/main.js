@@ -1,5 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
-  
+ 
+  const API_URL = 'https://dolceloubackend.onrender.com';
+
+  async function criarPedido(pedido) {
+    try {
+      const response = await fetch(`${API_URL}/v1/carrinho/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pedido)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (erro) {
+      console.error('Erro ao criar pedido:', erro);
+      throw erro;
+    }
+  }
+
   const modal = document.getElementById('modal-compra');
   const btnFechar = document.querySelector('.modal__fechar');
   const fundoModal = document.querySelector('.modal__fundo');
@@ -11,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const rotuloQtd = document.getElementById('rotulo-qtd');
   const valorQtd = document.querySelector('.contador__valor');
   const valorTotal = document.querySelector('.compra__total-valor');
-  
+ 
   const btnMais = document.querySelector('.contador__mais');
   const btnMenos = document.querySelector('.contador__menos');
   const btnAdicionar = document.querySelector('.compra__adicionar');
@@ -22,12 +43,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let ehMassa = false;
   let ehLasanha = false;
 
+  let produtoAtual = null;
+
   let containerSabores = document.getElementById('compra-sabores-wrap');
   if (!containerSabores && modal) {
     containerSabores = document.createElement('div');
     containerSabores.id = 'compra-sabores-wrap';
     containerSabores.style.margin = '1rem 0';
-    
+   
     const areaQtd = document.querySelector('.compra__quantidade');
     if (areaQtd) {
       areaQtd.parentNode.insertBefore(containerSabores, areaQtd);
@@ -38,8 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const total = precoUnitario * quantidade;
 
     if (valorQtd) {
-      valorQtd.textContent = unidade === 'kg' 
-        ? `${quantidade.toFixed(1).replace('.', ',')} kg` 
+      valorQtd.textContent = unidade === 'kg'
+        ? `${quantidade.toFixed(1).replace('.', ',')} kg`
         : `${quantidade} un`;
     }
 
@@ -50,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', (e) => {
     const btnComprar = e.target.closest('.js-comprar, .item-menu');
-    
+   
     if (btnComprar && !e.target.closest('.modal')) {
       e.preventDefault();
 
@@ -64,13 +87,22 @@ document.addEventListener('DOMContentLoaded', () => {
       ehMassa = Number(dataset.produtoId) >= 201 && Number(dataset.produtoId) <= 206;
       ehLasanha = Number(dataset.produtoId) === 201;
 
-      precoUnitario = parseFloat(String(precoRaw).replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
-      unidade = dataset.unidade || (String(precoRaw).toLowerCase().includes('un') ? 'un' : 'kg');
+      produtoAtual = {
+        id: dataset.produtoId,
+        nome,
+        descricao,
+        preco: parseFloat(String(precoRaw).replace(/[^\d,-]/g, '').replace(',', '.')) || 0,
+        unidade: dataset.unidade || (String(precoRaw).toLowerCase().includes('un') ? 'un' : 'kg'),
+        imagem: imgSrc
+      };
+
+      precoUnitario = produtoAtual.preco;
+      unidade = produtoAtual.unidade;
       quantidade = unidade === 'kg' ? 0.5 : 1;
 
       if (nomeModal) nomeModal.textContent = nome;
       if (descModal) descModal.textContent = descricao;
-      
+     
       if (imgModal) {
         if (imgSrc) {
           imgModal.src = imgSrc;
@@ -84,86 +116,94 @@ document.addEventListener('DOMContentLoaded', () => {
       if (precoBaseModal) {
         precoBaseModal.textContent = `R$ ${precoUnitario.toFixed(2).replace('.', ',')} / ${unidade}`;
       }
-      
+     
       if (rotuloQtd) {
         rotuloQtd.textContent = `Quantidade (${unidade})`;
       }
 
       const areaQtd = document.querySelector(".compra__quantidade");
 
-if (ehMassa) {
+      if (ehMassa) {
+        if (areaQtd) areaQtd.style.display = "none";
 
-  areaQtd.style.display = "none";
+        let html = `
+          <div style="margin-bottom:1rem;">
+            <label style="display:block;font-weight:bold;margin-bottom:.5rem;">
+              Tamanho
+            </label>
 
-  let html = `
-    <div style="margin-bottom:1rem;">
-      <label style="display:block;font-weight:bold;margin-bottom:.5rem;">
-        Tamanho
-      </label>
+            <select id="select-tamanho"
+              style="width:100%;padding:.6rem;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:1rem;color:inherit;background:#fff;">
+              <option value="700g" data-qtd="0.7">Pequeno (700g)</option>
+              <option value="1,2kg" data-qtd="1.2">Médio (1,2kg)</option>
+              <option value="1,7kg" data-qtd="1.7">Grande (1,7kg)</option>
+            </select>
+          </div>
+        `;
 
-      <select id="select-tamanho"
-        style="width:100%;padding:.6rem;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:1rem;color:inherit;background:#fff;">
-        <option value="700g">Pequeno (700g)</option>
-        <option value="1,2kg">Médio (1,2kg)</option>
-        <option value="1,7kg">Grande (1,7kg)</option>
-      </select>
-    </div>
-  `;
+        if (ehLasanha) {
+          html += `
+            <div style="margin-bottom:1rem;">
+              <label style="display:block;font-weight:bold;margin-bottom:.5rem;">
+                Sabor
+              </label>
 
-  if (ehLasanha) {
+              <select id="select-sabor"
+                style="width:100%;padding:.6rem;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:1rem;color:inherit;background:#fff;">
+                <option>Sugo</option>
+                <option>Mista</option>
+                <option>Bolonhesa</option>
+                <option>4 queijos</option>
+              </select>
+            </div>
+          `;
+        }
 
-    html += `
-      <div style="margin-bottom:1rem;">
-        <label style="display:block;font-weight:bold;margin-bottom:.5rem;">
-          Sabor
-        </label>
+        containerSabores.innerHTML = html;
+        containerSabores.style.display = "block";
 
-        <select id="select-sabor"
-          style="width:100%;padding:.6rem;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:1rem;color:inherit;background:#fff;">
-          <option>Sugo</option>
-          <option>Mista</option>
-          <option>Bolonhesa</option>
-          <option>4 queijos</option>
-        </select>
-      </div>
-    `;
-  }
+        setTimeout(() => {
+          const selectTamanho = document.getElementById('select-tamanho');
+          if (selectTamanho) {
+            const opcaoSelecionada = selectTamanho.options[selectTamanho.selectedIndex];
+            quantidade = parseFloat(opcaoSelecionada.dataset.qtd) || 0.7;
+            atualizarCalculos();
 
-  containerSabores.innerHTML = html;
-  containerSabores.style.display = "block";
+            selectTamanho.addEventListener('change', () => {
+              const opcao = selectTamanho.options[selectTamanho.selectedIndex];
+              quantidade = parseFloat(opcao.dataset.qtd) || 0.7;
+              atualizarCalculos();
+            });
+          }
+        }, 0);
 
-} else {
+      } else {
+        if (areaQtd) areaQtd.style.display = "block";
 
-  areaQtd.style.display = "block";
+        if (sabores && sabores.length > 0) {
+          let html = `
+            <label style="display:block;font-weight:bold;margin-bottom:.5rem;">
+              Escolha o sabor
+            </label>
 
-  if (sabores && sabores.length > 0) {
+            <select id="select-sabor"
+              style="width:100%;padding:.6rem;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:1rem;color:inherit;background:#fff;">
+          `;
 
-    let html = `
-      <label style="display:block;font-weight:bold;margin-bottom:.5rem;">
-        Escolha o sabor
-      </label>
+          sabores.forEach(sabor => {
+            html += `<option>${sabor.trim()}</option>`;
+          });
 
-      <select id="select-sabor"
-        style="width:100%;padding:.6rem;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:1rem;color:inherit;background:#fff;">
-    `;
+          html += `</select>`;
 
-    sabores.forEach(sabor=>{
-      html += `<option>${sabor.trim()}</option>`;
-    });
+          containerSabores.innerHTML = html;
+          containerSabores.style.display = "block";
 
-    html += `</select>`;
-
-    containerSabores.innerHTML = html;
-    containerSabores.style.display = "block";
-
-  } else {
-
-    containerSabores.innerHTML = "";
-    containerSabores.style.display = "none";
-
-  }
-
-}
+        } else {
+          containerSabores.innerHTML = "";
+          containerSabores.style.display = "none";
+        }
+      }
 
       atualizarCalculos();
 
@@ -196,11 +236,28 @@ if (ehMassa) {
   }
 
   if (btnAdicionar) {
-    btnAdicionar.addEventListener('click', (e) => {
+    btnAdicionar.addEventListener('click', async (e) => {
       e.preventDefault();
-      
+     
       const selectSabor = document.getElementById('select-sabor');
       const saborEscolhido = selectSabor ? ` (${selectSabor.value})` : '';
+      const selectTamanho = document.getElementById('select-tamanho');
+      const tamanhoSelecionado = selectTamanho ? selectTamanho.value : '';
+
+      let nomeProduto = produtoAtual?.nome || 'Produto';
+      if (saborEscolhido.trim()) nomeProduto += saborEscolhido;
+      if (tamanhoSelecionado) nomeProduto += ` - ${tamanhoSelecionado}`;
+
+      const subtotal = precoUnitario * quantidade;
+
+      const pedido = {
+        quantidade: Math.round(quantidade),
+        preco_produto: subtotal,
+        frete: 15.00,
+        cep: "0",
+        preco_total: subtotal + 15.00,
+        acesso: { id: "1" }
+      };
 
       const textoOriginal = btnAdicionar.textContent;
       const corOriginal = btnAdicionar.style.backgroundColor;
@@ -208,6 +265,28 @@ if (ehMassa) {
       btnAdicionar.textContent = '✓ Adicionado!';
       btnAdicionar.style.backgroundColor = '#2e7d32';
       btnAdicionar.disabled = true;
+
+      try {
+        const resposta = await criarPedido(pedido);
+        console.log('Pedido criado com sucesso:', resposta);
+
+        const carrinhoLocal = JSON.parse(localStorage.getItem('carrinho') || '[]');
+        carrinhoLocal.push({
+          id: produtoAtual?.id,
+          nome: nomeProduto,
+          preco: precoUnitario,
+          quantidade,
+          unidade,
+          subtotal,
+          pedidoId: resposta?.id ?? null
+        });
+        localStorage.setItem('carrinho', JSON.stringify(carrinhoLocal));
+
+      } catch (erro) {
+        console.error('Falha ao enviar pedido:', erro);
+        btnAdicionar.textContent = 'Erro ao enviar';
+        btnAdicionar.style.backgroundColor = '#c62828';
+      }
 
       setTimeout(() => {
         fecharModal();

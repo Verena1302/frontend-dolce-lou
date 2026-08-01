@@ -1313,6 +1313,7 @@ height: 22px;
 
 .botao-icone--editar {
 color: var(--cor-editar);
+
 }
 
 .botao-icone--excluir {
@@ -1321,10 +1322,14 @@ color: var(--cor-excluir);
 
 .botao-icone--ver {
 color: var(--cor-foco);
+width: 40px;
+height: 40px;
 }
 
 .botao-icone--cancelar {
 color: var(--cor-excluir);
+width: 40px;
+height: 40px;
 }
 
 .botao-icone:hover {

@@ -108,10 +108,12 @@ if (radiosFiltroStatus.length > 0) {
     }
   });
 
+  const campoPedidos = document.querySelector('[data-campo="pedidos-hoje"]');
   const campoAguardando = document.querySelector('[data-campo="aguardando"]');
   const campoFaturamento = document.querySelector('[data-campo="faturamento"]');
 
-  if (campoAguardando && campoFaturamento) {
+  if (campoAguardando && campoFaturamento && campoPedidos) {
+    campoPedidos.textContent = '5 pedidos'
     campoAguardando.textContent = '4 pedidos';
     campoFaturamento.textContent = 'R$ 1.845,00';
   }

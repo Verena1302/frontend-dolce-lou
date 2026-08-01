@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const somSucesso = new Audio ('audios/audioSucesso.mp3');
+  const somErro = new Audio ('audios/audioErro.mp3');
+
   const modal = document.getElementById('modal-compra');
   const btnFechar = document.querySelector('.modal__fechar');
   const fundoModal = document.querySelector('.modal__fundo');
@@ -56,6 +59,21 @@ document.addEventListener('DOMContentLoaded', () => {
       areaQtd.parentNode.insertBefore(containerSabores, areaQtd);
     }
   }
+
+
+  
+function tocarSomSucesso() {
+  somSucesso.play().catch(error => {
+    console.log("O navegador impediu a reprodução automática:", error);
+  });
+}
+
+function tocarSomErro() {
+  somErro.play().catch(error => {
+    console.log("O navegador impediu a reprodução automática:", error);
+  });
+}
+
 
   function atualizarCalculos() {
     const total = precoUnitario * quantidade;
@@ -264,6 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       btnAdicionar.textContent = '✓ Adicionado!';
       btnAdicionar.style.backgroundColor = '#2e7d32';
+      tocarSomSucesso();
       btnAdicionar.disabled = true;
 
       try {
@@ -286,6 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Falha ao enviar pedido:', erro);
         btnAdicionar.textContent = 'Erro ao enviar';
         btnAdicionar.style.backgroundColor = '#c62828';
+        tocarSomErro();
       }
 
       setTimeout(() => {
